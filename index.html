@@ -109,6 +109,20 @@
       font-size: 18px;
       font-weight: 500;
     }
+    .answer .effect {
+      display: block;
+      font-size: clamp(22px, 3vw, 32px);
+      line-height: 1.45;
+      font-weight: 800;
+    }
+    .answer .mnemonic {
+      display: block;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.55;
+      font-weight: 500;
+    }
     .buttons {
       display: flex;
       flex-wrap: wrap;
@@ -264,11 +278,11 @@
           <input id="search" placeholder="例如：当归、清热、止血">
         </label>
         <button id="resetBtn">清空记录</button>
-        <div class="small">题库由扫描版 PDF OCR 自动整理并校正，共 374 条。答案采用讲义详细表里的正式功效列，建议复习时用课本再核一遍细节。</div>
+        <div class="small">题库由扫描版 PDF OCR 自动整理并校正，共 374 条。答案采用讲义详细表里的正式功效列，同时保留原讲义口诀作辅助记忆。</div>
       </aside>
       <section class="list">
         <table>
-          <thead><tr><th>药名</th><th>正式功效</th><th>分类</th></tr></thead>
+          <thead><tr><th>药名</th><th>正式功效</th><th>口诀</th><th>分类</th></tr></thead>
           <tbody id="rows"></tbody>
         </table>
       </section>
@@ -282,6 +296,13 @@
     let revealed = false;
 
     const $ = (id) => document.getElementById(id);
+    const escapeHtml = (value) => String(value || "").replace(/[&<>"']/g, (char) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    }[char]));
     const save = () => localStorage.setItem("herb-review-state", JSON.stringify(state));
     const categories = [...new Set(herbs.map(h => h.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, "zh-Hans-CN"));
     const categorySelect = $("categoryFilter");
@@ -304,6 +325,12 @@
     const hiddenText = () => $("direction").value === "effect"
       ? "先别偷看。想好药名后再点“看答案”。"
       : "先别偷看。想好功效后再点“看答案”。";
+    const answerHtml = () => {
+      if ($("direction").value === "effect") {
+        return `<span class="effect">${escapeHtml(current.name)}</span><span class="mnemonic">口诀：${escapeHtml(current.mnemonic || "暂无")}</span>`;
+      }
+      return `<span class="effect">${escapeHtml(current.answer)}</span><span class="mnemonic">口诀：${escapeHtml(current.mnemonic || "暂无")}</span>`;
+    };
     const pick = () => {
       let pool = currentPool();
       if (!pool.length) pool = herbs;
@@ -321,7 +348,7 @@
     const reveal = () => {
       if (!current) return;
       revealed = true;
-      $("answer").textContent = $("direction").value === "effect" ? current.name : current.answer;
+      $("answer").innerHTML = answerHtml();
       $("answer").classList.remove("hidden");
     };
     const mark = (known) => {
@@ -347,9 +374,9 @@
       const selectedCategory = $("categoryFilter").value;
       const rows = herbs.filter(h => {
         if (selectedCategory !== "all" && h.category !== selectedCategory) return false;
-        return !q || h.name.includes(q) || h.answer.includes(q) || (h.category || "").includes(q);
+        return !q || h.name.includes(q) || h.answer.includes(q) || (h.mnemonic || "").includes(q) || (h.category || "").includes(q);
       }).slice(0, 160);
-      $("rows").innerHTML = rows.map(h => `<tr><td><strong>${h.name}</strong></td><td>${h.answer}</td><td>${h.category || ""}</td></tr>`).join("");
+      $("rows").innerHTML = rows.map(h => `<tr><td><strong>${escapeHtml(h.name)}</strong></td><td>${escapeHtml(h.answer)}</td><td>${escapeHtml(h.mnemonic || "")}</td><td>${escapeHtml(h.category || "")}</td></tr>`).join("");
     };
 
     $("showBtn").addEventListener("click", reveal);
