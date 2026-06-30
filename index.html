@@ -289,6 +289,24 @@
       display: grid;
       gap: 6px;
     }
+    .search-tools {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+    }
+    .search-tools input {
+      min-width: 0;
+    }
+    .search-tools button {
+      min-width: 72px;
+      padding: 0 14px;
+    }
+    .search-feedback {
+      min-height: 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
     input, select {
       width: 100%;
       min-height: 46px;
@@ -326,6 +344,11 @@
     .list-title {
       font-weight: 800;
       color: var(--accent-deep);
+    }
+    .empty-row {
+      padding: 26px 16px;
+      color: var(--muted);
+      text-align: center;
     }
     table {
       width: 100%;
@@ -410,6 +433,8 @@
         gap: 10px;
       }
       .field { gap: 5px; }
+      .search-tools { grid-template-columns: 1fr; }
+      .search-tools button { width: 100%; }
       input, select { min-height: 44px; }
     }
   </style>
@@ -476,7 +501,11 @@
         </label>
         <label class="field">
           <span class="small">搜索药名或功效</span>
-          <input id="search" placeholder="例如：当归、清热、止血">
+          <div class="search-tools">
+            <input id="search" placeholder="例如：当归、清热、止血">
+            <button id="searchBtn" type="button">搜索</button>
+          </div>
+          <span class="search-feedback" id="searchFeedback">输入关键词后点搜索，或直接按回车。</span>
         </label>
         <button id="resetBtn">清空记录</button>
         <div class="note">正式功效按 Word 版学霸笔记核对，口诀来自《中药快快记改良版》。移动端可以直接收藏到主屏幕当抽背工具用。</div>
@@ -484,7 +513,7 @@
       <section class="list">
         <div class="list-head">
           <div class="list-title">题库速查</div>
-          <div class="small">最多显示 160 条</div>
+          <div class="small" id="resultSummary">共 374 条</div>
         </div>
         <table>
           <thead><tr><th>药名</th><th>正式功效</th><th>口诀</th><th>分类</th></tr></thead>
@@ -574,14 +603,23 @@
       $("doneCount").textContent = state.done;
       $("rate").textContent = state.done ? Math.round(state.know / state.done * 100) + "%" : "0%";
     };
-    const renderRows = () => {
+    const renderRows = (submitted = false) => {
       const q = $("search").value.trim();
       const selectedCategory = $("categoryFilter").value;
-      const rows = herbs.filter(h => {
+      const matched = herbs.filter(h => {
         if (selectedCategory !== "all" && h.category !== selectedCategory) return false;
         return !q || h.name.includes(q) || h.answer.includes(q) || (h.mnemonic || "").includes(q) || (h.category || "").includes(q);
-      }).slice(0, 160);
-      $("rows").innerHTML = rows.map(h => `<tr><td><strong>${escapeHtml(h.name)}</strong></td><td>${escapeHtml(h.answer)}</td><td>${escapeHtml(h.mnemonic || "")}<br><span class="small">来源：${escapeHtml(h.mnemonicSource || "未标注")}</span></td><td>${escapeHtml(h.category || "")}</td></tr>`).join("");
+      });
+      const rows = matched.slice(0, 160);
+      $("resultSummary").textContent = q
+        ? `找到 ${matched.length} 条${matched.length > 160 ? "，显示前 160 条" : ""}`
+        : `${selectedCategory === "all" ? "全部" : selectedCategory} · ${matched.length} 条`;
+      $("searchFeedback").textContent = q
+        ? `${submitted ? "已搜索" : "正在筛选"}“${q}”：${matched.length} 条结果`
+        : "输入关键词后点搜索，或直接按回车。";
+      $("rows").innerHTML = rows.length
+        ? rows.map(h => `<tr><td><strong>${escapeHtml(h.name)}</strong></td><td>${escapeHtml(h.answer)}</td><td>${escapeHtml(h.mnemonic || "")}<br><span class="small">来源：${escapeHtml(h.mnemonicSource || "未标注")}</span></td><td>${escapeHtml(h.category || "")}</td></tr>`).join("")
+        : `<tr><td colspan="4"><div class="empty-row">没有找到相关药味。换个关键词，比如“清热”“止血”或药名中的一个字试试。</div></td></tr>`;
     };
 
     $("showBtn").addEventListener("click", reveal);
@@ -591,7 +629,14 @@
     $("mode").addEventListener("change", pick);
     $("direction").addEventListener("change", pick);
     $("categoryFilter").addEventListener("change", () => { renderRows(); pick(); });
-    $("search").addEventListener("input", renderRows);
+    $("searchBtn").addEventListener("click", () => renderRows(true));
+    $("search").addEventListener("input", () => renderRows(false));
+    $("search").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        renderRows(true);
+      }
+    });
     $("resetBtn").addEventListener("click", () => {
       state.miss = [];
       state.done = 0;
