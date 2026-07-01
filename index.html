@@ -251,6 +251,10 @@
       border-color: #f4cfbd;
       color: var(--accent-2);
     }
+    button.ghost {
+      background: #fbfaf6;
+      color: var(--muted);
+    }
     button:active { transform: translateY(1px); }
     .side {
       padding: 16px;
@@ -291,7 +295,7 @@
     }
     .search-tools {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-columns: minmax(0, 1fr) auto auto;
       gap: 8px;
     }
     .search-tools input {
@@ -433,7 +437,8 @@
         gap: 10px;
       }
       .field { gap: 5px; }
-      .search-tools { grid-template-columns: 1fr; }
+      .search-tools { grid-template-columns: 1fr 1fr; }
+      .search-tools input { grid-column: 1 / -1; }
       .search-tools button { width: 100%; }
       input, select { min-height: 44px; }
     }
@@ -504,6 +509,7 @@
           <div class="search-tools">
             <input id="search" placeholder="例如：当归、清热、止血">
             <button id="searchBtn" type="button">搜索</button>
+            <button class="ghost" id="clearSearchBtn" type="button">清除</button>
           </div>
           <span class="search-feedback" id="searchFeedback">输入关键词后点搜索，或直接按回车。</span>
         </label>
@@ -577,6 +583,7 @@
       $("category").textContent = current.category || "OCR 分类";
       $("answer").textContent = hiddenText();
       $("answer").classList.add("hidden");
+      $("showBtn").textContent = "看答案";
       update();
     };
     const reveal = () => {
@@ -584,6 +591,7 @@
       revealed = true;
       $("answer").innerHTML = answerHtml();
       $("answer").classList.remove("hidden");
+      $("showBtn").textContent = "答案已显示";
     };
     const mark = (known) => {
       if (!current) return;
@@ -620,6 +628,9 @@
       $("rows").innerHTML = rows.length
         ? rows.map(h => `<tr><td><strong>${escapeHtml(h.name)}</strong></td><td>${escapeHtml(h.answer)}</td><td>${escapeHtml(h.mnemonic || "")}<br><span class="small">来源：${escapeHtml(h.mnemonicSource || "未标注")}</span></td><td>${escapeHtml(h.category || "")}</td></tr>`).join("")
         : `<tr><td colspan="4"><div class="empty-row">没有找到相关药味。换个关键词，比如“清热”“止血”或药名中的一个字试试。</div></td></tr>`;
+      if (submitted) {
+        document.querySelector(".list").scrollIntoView({ behavior: "smooth", block: "start" });
+      }
     };
 
     $("showBtn").addEventListener("click", reveal);
@@ -637,7 +648,13 @@
         renderRows(true);
       }
     });
+    $("clearSearchBtn").addEventListener("click", () => {
+      $("search").value = "";
+      renderRows(true);
+      $("search").focus();
+    });
     $("resetBtn").addEventListener("click", () => {
+      if (!confirm("确定清空待加强和答题统计吗？")) return;
       state.miss = [];
       state.done = 0;
       state.know = 0;
