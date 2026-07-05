@@ -237,6 +237,18 @@
       line-height: 1.55;
       font-weight: 500;
     }
+    .custom-tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      margin: 0 0 10px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: var(--warn);
+      color: var(--accent-2);
+      font-size: 12px;
+      font-weight: 750;
+    }
     .buttons {
       display: grid;
       grid-template-columns: 1.4fr 1fr;
@@ -326,6 +338,11 @@
       color: var(--muted);
       font-size: 13px;
       line-height: 1.4;
+    }
+    .custom-tools {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
     }
     input, select {
       width: 100%;
@@ -432,6 +449,60 @@
       color: var(--muted);
       text-align: center;
     }
+    .custom-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1200;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      background: rgba(23, 33, 29, 0.38);
+      backdrop-filter: blur(8px);
+    }
+    .custom-modal[hidden] {
+      display: none;
+    }
+    .custom-dialog {
+      width: min(620px, 100%);
+      max-height: min(86vh, 760px);
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: clamp(18px, 4vw, 26px);
+      box-shadow: 0 24px 70px rgba(31, 46, 39, 0.22);
+    }
+    .custom-dialog h2 {
+      margin: 0 0 8px;
+      color: var(--accent-deep);
+      font-size: 24px;
+      letter-spacing: 0;
+    }
+    textarea {
+      width: 100%;
+      min-height: 190px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fff;
+      color: var(--ink);
+      line-height: 1.55;
+      font: inherit;
+    }
+    .custom-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .custom-message {
+      min-height: 20px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -522,6 +593,8 @@
       .search-tools { grid-template-columns: 1fr 1fr; }
       .search-tools input { grid-column: 1 / -1; }
       .search-tools button { width: 100%; }
+      .custom-tools { grid-template-columns: 1fr; }
+      .custom-actions { display: grid; }
       input, select { min-height: 44px; }
     }
   </style>
@@ -561,6 +634,8 @@
           <button id="knowBtn">会了</button>
           <button class="warn" id="missBtn">再来一遍</button>
           <button id="nextBtn">随机下一味</button>
+          <button id="editEffectBtn" type="button">编辑功效</button>
+          <button class="ghost" id="restoreEffectBtn" type="button">恢复默认</button>
         </div>
       </article>
       <aside class="side">
@@ -601,6 +676,12 @@
           <span class="search-feedback" id="searchFeedback">输入关键词后点搜索，或直接按回车。</span>
         </label>
         <button id="resetBtn">清空记录</button>
+        <div class="controls-title">自定义功效</div>
+        <div class="custom-tools">
+          <button id="exportCustomBtn" type="button">导出修改</button>
+          <button id="importCustomBtn" type="button">导入修改</button>
+        </div>
+        <div class="small">修改会保存在当前浏览器；换手机可先导出，再在新设备导入。</div>
         <div class="note">正式功效按 Word 版学霸笔记核对，口诀来自《中药快快记改良版》。移动端可以直接收藏到主屏幕当抽背工具用。</div>
       </aside>
       <section class="progress-panel">
@@ -623,15 +704,30 @@
     </section>
     <footer><div class="footer-inner">免费体验版用于体验复习流程；需要系统复习时，请使用激活码版解锁完整 374 味题库。</div></footer>
   </main>
+  <div class="custom-modal" id="customModal" hidden>
+    <section class="custom-dialog">
+      <h2 id="customModalTitle">自定义功效</h2>
+      <p class="small" id="customModalHelp">修改会保存在当前浏览器。</p>
+      <textarea id="customText" placeholder="在这里粘贴或编辑功效"></textarea>
+      <div class="custom-actions">
+        <button class="primary" id="customSaveBtn" type="button">保存</button>
+        <button id="customCopyBtn" type="button">复制</button>
+        <button class="ghost" id="customCancelBtn" type="button">关闭</button>
+      </div>
+      <div class="custom-message" id="customMessage"></div>
+    </section>
+  </div>
   <script>
     const herbs = [{"name": "桂枝", "category": "1.发散风寒（辛温解表）", "mnemonic": "同（桂枝发汗解肌）", "answer": "发汗解肌、温通经脉、助阳化气、平冲降逆、散寒止痛", "formalEffect": "发汗解肌、温通经脉、助阳化气、平冲降逆、散寒止痛", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "生姜", "category": "1.发散风寒（辛温解表）", "mnemonic": "鱼酱寒痰肺", "answer": "解表散寒、温中止呕、化痰止咳、解毒", "formalEffect": "解表散寒、温中止呕、化痰止咳、解毒", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "白芷", "category": "1.发散风寒（辛温解表）", "mnemonic": "前面相同。后两句为：这个农村亲戚是一个风一样（祛风止痒）的女子，虽然很丑", "answer": "解表散寒、祛风止痛、宣通鼻窍、燥湿止带、消肿排脓、祛风止痒、祛斑除臭", "formalEffect": "解表散寒、祛风止痛、宣通鼻窍、燥湿止带、消肿排脓、祛风止痒、祛斑除臭", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "紫苏叶", "category": "1.发散风寒（辛温解表）", "mnemonic": "支书表，三星盒，俺抬雨鞋，藕", "answer": "解表散寒、行气和胃、止呕安胎、解鱼蟹毒", "formalEffect": "解表散寒、行气和胃、止呕安胎、解鱼蟹毒", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "细辛", "category": "1.发散风寒（辛温解表）", "mnemonic": "同（细芷借三区桶鼻翘。新闻非花银，只找袋重农）", "answer": "散寒解表、祛风止痛、宣通鼻窍、温肺化饮", "formalEffect": "散寒解表、祛风止痛、宣通鼻窍、温肺化饮", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "羌活", "category": "1.发散风寒（辛温解表）", "mnemonic": "同（羌藁解散风湿痛）", "answer": "解表散寒、祛风除湿、止痛", "formalEffect": "解表散寒、祛风除湿、止痛", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "苍耳子", "category": "1.发散风寒（辛温解表）", "mnemonic": "儿子风湿痛，杀虫子", "answer": "散风寒、通鼻窍、祛风湿、止痛止痒", "formalEffect": "散风寒、通鼻窍、祛风湿、止痛止痒", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "荆芥", "category": "1.发散风寒（辛温解表）", "mnemonic": "荆芥表，缝针疮。止血", "answer": "解表散风、透疹消疮、收敛止血", "formalEffect": "解表散风、透疹消疮、收敛止血", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "藁本", "category": "1.发散风寒（辛温解表）", "mnemonic": "同（羌藁解散风湿痛）", "answer": "祛风散寒、除湿止痛", "formalEffect": "祛风散寒、除湿止痛", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "辛夷", "category": "1.发散风寒（辛温解表）", "mnemonic": "同（辛夷风寒鼻）", "answer": "散风寒、通鼻窍", "formalEffect": "散风寒、通鼻窍", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "防风", "category": "1.发散风寒（辛温解表）", "mnemonic": "防风取表拾铜镜，熙凤，甘比", "answer": "祛风解表、胜湿止痛、息风止痉", "formalEffect": "祛风解表、胜湿止痛、息风止痉", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "香薷", "category": "1.发散风寒（辛温解表）", "mnemonic": "同（香薷发湿水）", "answer": "发汗解表、化湿和中、利水消肿", "formalEffect": "发汗解表、化湿和中、利水消肿", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "麻黄", "category": "1.发散风寒（辛温解表）", "mnemonic": "“”麻黄“汉字：发喘水", "answer": "发汗解表、宣肺平喘、利水消肿、散寒通滞", "formalEffect": "发汗解表、宣肺平喘、利水消肿、散寒通滞", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "决明子", "category": "1.清热泻火", "mnemonic": "同（决名次请名唱）", "answer": "清热明目、润肠通便、平肝清肝", "formalEffect": "清热明目、润肠通便、平肝清肝", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "夏枯草", "category": "1.清热泻火", "mnemonic": "枯草热火木八种，热瓶干", "answer": "清肝泻火、明目、散结消肿", "formalEffect": "清肝泻火、明目、散结消肿", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "天花粉", "category": "1.清热泻火", "mnemonic": "同（天花粉，剩金止渴，小蛊排龙）", "answer": "清热泻火、生津止渴、消肿排脓", "formalEffect": "清热泻火、生津止渴、消肿排脓", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "密蒙花", "category": "1.清热泻火", "mnemonic": "同（蒙花泻火养肝名医））", "answer": "清热泻火、养肝明目、退翳", "formalEffect": "清热泻火、养肝明目、退翳", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "栀子", "category": "1.清热泻火", "mnemonic": "同（侄子卸货厨房，清理时晾肚，外肿痛）", "answer": "泻火除烦、清热利湿、凉血解毒、外用：消肿止痛、焦栀子：凉血止血", "formalEffect": "泻火除烦、清热利湿、凉血解毒、外用：消肿止痛、焦栀子：凉血止血", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "淡竹叶", "category": "1.清热泻火", "mnemonic": "同（竹叶泻火烦尽尿，淡加淋，烦加呕）", "answer": "清热泻火、除烦止渴、利尿通淋", "formalEffect": "清热泻火、除烦止渴、利尿通淋", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "知母", "category": "1.清热泻火", "mnemonic": "知母泻火金人噪", "answer": "清热泻火、滋阴润燥、生津止渴", "formalEffect": "清热泻火、滋阴润燥、生津止渴", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "石膏", "category": "1.清热泻火", "mnemonic": "同（生石膏泻火，除烦渴；煅石膏——首饰升级——脸窗雪）", "answer": "生用：清热泻火、除烦止渴、煅用：收湿、生肌、敛疮、止血", "formalEffect": "生用：清热泻火、除烦止渴、煅用：收湿、生肌、敛疮、止血", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "芦根", "category": "1.清热泻火", "mnemonic": "同（竹叶泻火烦尽尿，淡加淋，烦加呕）", "answer": "清热泻火、生津止渴、除烦止呕、利尿", "formalEffect": "清热泻火、生津止渴、除烦止呕、利尿", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "乌梢蛇", "category": "1.祛风寒湿", "mnemonic": "祛风，通络，止痉，止痒", "answer": "祛风、通络、止痉", "formalEffect": "祛风、通络、止痉", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "威灵仙", "category": "1.祛风寒湿", "mnemonic": "威灵仙，风湿经络痛鲠痰（消痰水）", "answer": "祛风湿、通经络、止痛、消骨鲠", "formalEffect": "祛风湿、通经络、止痛、消骨鲠", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "川乌", "category": "1.祛风寒湿", "mnemonic": "同（川乌草乌同，风湿温经痛）", "answer": "祛风除湿、温经止痛", "formalEffect": "祛风除湿、温经止痛", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "昆明山海棠", "category": "1.祛风寒湿", "mnemonic": "同（昆明逢十活动筋骨）", "answer": "祛风湿、活血止痛、续筋接骨", "formalEffect": "祛风湿、活血止痛、续筋接骨", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "木瓜", "category": "1.祛风寒湿", "mnemonic": "木瓜熟进货，漯河喂画师，小时神经科", "answer": "舒筋活络、和胃化湿、消食、生津止渴", "formalEffect": "舒筋活络、和胃化湿、消食、生津止渴", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "海风藤", "category": "1.祛风寒湿", "mnemonic": "海风藤，风湿络疼", "answer": "祛风除湿、通络止痛", "formalEffect": "祛风除湿、通络止痛", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "独活", "category": "1.祛风寒湿", "mnemonic": "同（独活风痛表）", "answer": "祛风除湿、通痹止痛、解表", "formalEffect": "祛风除湿、通痹止痛、解表", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "穿山龙", "category": "1.祛风寒湿", "mnemonic": "穿山风湿筋络通，咳喘活血痛", "answer": "祛风除湿、舒筋通络、活血止痛、止咳平喘", "formalEffect": "祛风除湿、舒筋通络、活血止痛、止咳平喘", "mnemonicSource": "原讲义/待补", "effectSource": "Word版学霸笔记"}, {"name": "草乌", "category": "1.祛风寒湿", "mnemonic": "同（川乌草乌同，风湿温经痛）", "answer": "祛风除湿、温经止痛", "formalEffect": "祛风除湿、温经止痛", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "蕲蛇", "category": "1.祛风寒湿", "mnemonic": "二蛇去了静", "answer": "祛风、通络、止痉", "formalEffect": "祛风、通络、止痉", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "青风藤", "category": "1.祛风寒湿", "mnemonic": "青藤风湿经络尿", "answer": "祛风湿、通经络、利小便", "formalEffect": "祛风湿、通经络、利小便", "mnemonicSource": "原讲义/待补", "effectSource": "Word版学霸笔记"}, {"name": "佩兰", "category": "化湿药", "mnemonic": "同（佩兰画师表叔姓脾胃）", "answer": "芳香化湿、醒脾开胃、发表解暑", "formalEffect": "芳香化湿、醒脾开胃、发表解暑", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "厚朴", "category": "化湿药", "mnemonic": "同（侯婆找小谭，下棋出慢）", "answer": "燥湿消痰、下气除满、行气消积、消痰平喘", "formalEffect": "燥湿消痰、下气除满、行气消积、消痰平喘", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "广藿香", "category": "化湿药", "mnemonic": "同（藿香画师表叔河中藕）", "answer": "芳香化湿、和中止呕、发表解暑", "formalEffect": "芳香化湿、和中止呕、发表解暑", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "砂仁", "category": "化湿药", "mnemonic": "同（豆蔻砂仁划尸开胃，闻中腥气，豆呕食砂泻胎）", "answer": "化湿开胃、温脾止泻、理气安胎", "formalEffect": "化湿开胃、温脾止泻、理气安胎", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "苍术", "category": "化湿药", "mnemonic": "同（苍术造剑去三明）", "answer": "燥湿健脾、祛风散寒、明目", "formalEffect": "燥湿健脾、祛风散寒、明目", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "草果", "category": "化湿药", "mnemonic": "同（草果早闻中介谈）", "answer": "燥湿温中、截疟除痰", "formalEffect": "燥湿温中、截疟除痰", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "草豆蔻", "category": "化湿药", "mnemonic": "“草寇造型稳重哦！”“谢哩！”", "answer": "燥湿行气、温中止呕、止泻止痢", "formalEffect": "燥湿行气、温中止呕、止泻止痢", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "豆蔻", "category": "化湿药", "mnemonic": "同（豆蔻砂仁划尸开胃，闻中腥气，豆呕食砂泻胎）", "answer": "化湿行气、温中止呕、开胃消食", "formalEffect": "化湿行气、温中止呕、开胃消食", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "六神曲", "category": "消食药", "mnemonic": "神曲小时为借表退", "answer": "消食和胃、解表退热", "formalEffect": "消食和胃、解表退热", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "山楂", "category": "消食药", "mnemonic": "山楂市建委姓俞，桌子三截，桶里血", "answer": "消食健胃、行气散瘀、化浊降脂、散结止痛、止泻止痢", "formalEffect": "消食健胃、行气散瘀、化浊降脂、散结止痛、止泻止痢", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "稻芽", "category": "消食药", "mnemonic": "同（稻芽食盒剪开）", "answer": "消食和中、健脾开胃", "formalEffect": "消食和中、健脾开胃", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "莱菔子", "category": "消食药", "mnemonic": "同（莱菔市长降棋摊）", "answer": "消食除胀、降气化痰", "formalEffect": "消食除胀、降气化痰", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "鸡内金", "category": "消食药", "mnemonic": "同（基金建委小事，经艺林画室）", "answer": "消食健胃、固精止遗、通淋化石", "formalEffect": "消食健胃、固精止遗、通淋化石", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}, {"name": "麦芽", "category": "消食药", "mnemonic": "麦芽姓石，见开会入账，赶妻", "answer": "消食行气、健脾开胃、回乳消胀、疏肝行气", "formalEffect": "消食行气、健脾开胃、回乳消胀、疏肝行气", "mnemonicSource": "中药快快记改良版", "effectSource": "Word版学霸笔记"}];
     const state = JSON.parse(localStorage.getItem("herb-review-state") || '{"miss":[],"done":0,"know":0}');
     state.miss = Array.isArray(state.miss) ? state.miss : [];
     state.mastered = Array.isArray(state.mastered) ? state.mastered : [];
+    state.customEffects = state.customEffects && typeof state.customEffects === "object" && !Array.isArray(state.customEffects) ? state.customEffects : {};
     state.done = Number.isFinite(Number(state.done)) ? Number(state.done) : 0;
     state.know = Number.isFinite(Number(state.know)) ? Number(state.know) : 0;
     let current = null;
     let revealed = false;
+    let customMode = "edit";
 
     const $ = (id) => document.getElementById(id);
     const escapeHtml = (value) => String(value || "").replace(/[&<>"']/g, (char) => ({
@@ -642,6 +738,9 @@
       "'": "&#39;"
     }[char]));
     const save = () => localStorage.setItem("herb-review-state", JSON.stringify(state));
+    const defaultAnswer = (herb) => herb?.answer || "";
+    const answerFor = (herb) => state.customEffects[herb.name] || defaultAnswer(herb);
+    const hasCustomAnswer = (herb) => Boolean(herb && state.customEffects[herb.name]);
     const categories = [...new Set(herbs.map(h => h.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, "zh-Hans-CN"));
     const categorySelect = $("categoryFilter");
     categories.forEach(category => {
@@ -664,10 +763,11 @@
       ? "先别偷看。想好药名后再点“看答案”。"
       : "先别偷看。想好功效后再点“看答案”。";
     const answerHtml = () => {
+      const customTag = hasCustomAnswer(current) ? `<span class="custom-tag">已使用我的自定义功效</span>` : "";
       if ($("direction").value === "effect") {
-      return `<span class="effect">${escapeHtml(current.name)}</span><span class="mnemonic">口诀：${escapeHtml(current.mnemonic || "暂无")}<br>来源：${escapeHtml(current.mnemonicSource || "未标注")}</span>`;
+      return `${customTag}<span class="effect">${escapeHtml(current.name)}</span><span class="mnemonic">当前功效：${escapeHtml(answerFor(current))}<br>口诀：${escapeHtml(current.mnemonic || "暂无")}<br>来源：${escapeHtml(current.mnemonicSource || "未标注")}</span>`;
       }
-      return `<span class="effect">${escapeHtml(current.answer)}</span><span class="mnemonic">口诀：${escapeHtml(current.mnemonic || "暂无")}<br>来源：${escapeHtml(current.mnemonicSource || "未标注")}</span>`;
+      return `${customTag}<span class="effect">${escapeHtml(answerFor(current))}</span><span class="mnemonic">口诀：${escapeHtml(current.mnemonic || "暂无")}<br>来源：${escapeHtml(current.mnemonicSource || "未标注")}</span>`;
     };
     const pick = () => {
       let pool = currentPool();
@@ -676,7 +776,7 @@
       revealed = false;
       const reverse = $("direction").value === "effect";
       $("questionLabel").textContent = reverse ? "这组功效对应的是" : "这味药是";
-      $("herbName").textContent = reverse ? current.answer : current.name;
+      $("herbName").textContent = reverse ? answerFor(current) : current.name;
       $("herbName").classList.toggle("effect-prompt", reverse);
       $("category").textContent = current.category || "OCR 分类";
       $("answer").textContent = hiddenText();
@@ -734,7 +834,8 @@
       const selectedCategory = $("categoryFilter").value;
       const matched = herbs.filter(h => {
         if (selectedCategory !== "all" && h.category !== selectedCategory) return false;
-        return !q || h.name.includes(q) || h.answer.includes(q) || (h.mnemonic || "").includes(q) || (h.category || "").includes(q);
+        const displayAnswer = answerFor(h);
+        return !q || h.name.includes(q) || displayAnswer.includes(q) || defaultAnswer(h).includes(q) || (h.mnemonic || "").includes(q) || (h.category || "").includes(q);
       });
       const rows = matched.slice(0, 160);
       $("resultSummary").textContent = q
@@ -744,10 +845,110 @@
         ? `${submitted ? "已搜索" : "正在筛选"}“${q}”：${matched.length} 条结果`
         : "输入关键词后点搜索，或直接按回车。";
       $("rows").innerHTML = rows.length
-        ? rows.map(h => `<tr><td><strong>${escapeHtml(h.name)}</strong></td><td>${escapeHtml(h.answer)}</td><td>${escapeHtml(h.mnemonic || "")}<br><span class="small">来源：${escapeHtml(h.mnemonicSource || "未标注")}</span></td><td>${escapeHtml(h.category || "")}</td></tr>`).join("")
+        ? rows.map(h => `<tr><td><strong>${escapeHtml(h.name)}</strong></td><td>${hasCustomAnswer(h) ? '<span class="custom-tag">自定义</span><br>' : ''}${escapeHtml(answerFor(h))}</td><td>${escapeHtml(h.mnemonic || "")}<br><span class="small">来源：${escapeHtml(h.mnemonicSource || "未标注")}</span></td><td>${escapeHtml(h.category || "")}</td></tr>`).join("")
         : `<tr><td colspan="4"><div class="empty-row">没有找到相关药味。换个关键词，比如“清热”“止血”或药名中的一个字试试。</div></td></tr>`;
       if (submitted) {
         document.querySelector(".list").scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    };
+    const openCustomModal = (mode, title, help, text = "") => {
+      customMode = mode;
+      $("customModalTitle").textContent = title;
+      $("customModalHelp").textContent = help;
+      $("customText").value = text;
+      $("customText").readOnly = mode === "export";
+      $("customMessage").textContent = "";
+      $("customSaveBtn").textContent = mode === "import" ? "导入" : mode === "edit" ? "保存" : "关闭";
+      $("customCopyBtn").hidden = mode !== "export";
+      $("customModal").hidden = false;
+      setTimeout(() => $("customText").focus(), 30);
+    };
+    const closeCustomModal = () => {
+      $("customModal").hidden = true;
+      $("customText").readOnly = false;
+    };
+    const copyCustomText = async () => {
+      const text = $("customText").value;
+      try {
+        await navigator.clipboard.writeText(text);
+        $("customMessage").textContent = "已复制，可以粘贴到备忘录或发给自己保存。";
+      } catch (error) {
+        $("customText").select();
+        document.execCommand("copy");
+        $("customMessage").textContent = "已选中文本，请手动复制保存。";
+      }
+    };
+    const exportCustomEffects = () => {
+      const payload = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        app: "zhongyao-random-review",
+        customEffects: state.customEffects
+      };
+      openCustomModal(
+        "export",
+        "导出我的自定义功效",
+        "复制下面这段内容，换手机或换浏览器时可以用“导入修改”恢复。",
+        JSON.stringify(payload, null, 2)
+      );
+    };
+    const importCustomEffects = () => {
+      openCustomModal(
+        "import",
+        "导入自定义功效",
+        "粘贴之前导出的 JSON。导入后会合并到当前浏览器的自定义功效里。",
+        ""
+      );
+    };
+    const saveCustomModal = () => {
+      if (customMode === "export") {
+        closeCustomModal();
+        return;
+      }
+      if (customMode === "edit") {
+        if (!current) return;
+        const value = $("customText").value.trim();
+        if (!value) {
+          $("customMessage").textContent = "功效不能为空。";
+          return;
+        }
+        if (value === defaultAnswer(current)) {
+          delete state.customEffects[current.name];
+        } else {
+          state.customEffects[current.name] = value;
+        }
+        save();
+        closeCustomModal();
+        if (revealed) reveal();
+        renderRows(false);
+        return;
+      }
+      if (customMode === "import") {
+        try {
+          const parsed = JSON.parse($("customText").value);
+          const incoming = parsed.customEffects && typeof parsed.customEffects === "object" ? parsed.customEffects : parsed;
+          const validNames = new Set(herbs.map(h => h.name));
+          let imported = 0;
+          Object.entries(incoming).forEach(([name, effect]) => {
+            const cleanName = String(name || "").trim();
+            const cleanEffect = String(effect || "").trim();
+            if (validNames.has(cleanName) && cleanEffect) {
+              state.customEffects[cleanName] = cleanEffect;
+              imported += 1;
+            }
+          });
+          if (!imported) {
+            $("customMessage").textContent = "没有识别到可导入的自定义功效。";
+            return;
+          }
+          save();
+          closeCustomModal();
+          if (revealed) reveal();
+          renderRows(false);
+          alert(`已导入 ${imported} 条自定义功效。`);
+        } catch (error) {
+          $("customMessage").textContent = "导入失败：请确认粘贴的是导出的 JSON 内容。";
+        }
       }
     };
 
@@ -755,6 +956,26 @@
     $("knowBtn").addEventListener("click", () => mark(true));
     $("missBtn").addEventListener("click", () => mark(false));
     $("nextBtn").addEventListener("click", pick);
+    $("editEffectBtn").addEventListener("click", () => {
+      if (!current) return;
+      openCustomModal(
+        "edit",
+        `编辑：${current.name}`,
+        "这里会覆盖当前浏览器里的答案显示，适合改成自己教材或老师要求的版本。",
+        answerFor(current)
+      );
+    });
+    $("restoreEffectBtn").addEventListener("click", () => {
+      if (!current || !hasCustomAnswer(current)) {
+        alert("当前药味还没有自定义功效。");
+        return;
+      }
+      if (!confirm(`恢复“${current.name}”的默认功效吗？`)) return;
+      delete state.customEffects[current.name];
+      save();
+      if (revealed) reveal();
+      renderRows(false);
+    });
     $("mode").addEventListener("change", pick);
     $("direction").addEventListener("change", pick);
     $("categoryFilter").addEventListener("change", () => { renderRows(); pick(); });
@@ -778,6 +999,14 @@
       $("search").value = "";
       renderRows(true);
       $("search").focus();
+    });
+    $("exportCustomBtn").addEventListener("click", exportCustomEffects);
+    $("importCustomBtn").addEventListener("click", importCustomEffects);
+    $("customSaveBtn").addEventListener("click", saveCustomModal);
+    $("customCopyBtn").addEventListener("click", copyCustomText);
+    $("customCancelBtn").addEventListener("click", closeCustomModal);
+    $("customModal").addEventListener("click", (event) => {
+      if (event.target === $("customModal")) closeCustomModal();
     });
     $("resetBtn").addEventListener("click", () => {
       if (!confirm("确定清空待加强和答题统计吗？")) return;
